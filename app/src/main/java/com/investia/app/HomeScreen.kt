@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.investia.app.model.Acao
 import com.investia.app.network.RetrofitClient
@@ -31,12 +33,17 @@ import java.util.Locale
 @Composable
 fun HomeScreen() {
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var ticker by remember { mutableStateOf("PETR4") }
     var acao by remember { mutableStateOf<Acao?>(null) }
     var carregando by remember { mutableStateOf(false) }
     var erro by remember { mutableStateOf("") }
 
-    val scope = rememberCoroutineScope()
+    var favoritos by remember {
+        mutableStateOf(FavoritesStore.carregar(context))
+    }
 
     Column(
         modifier = Modifier
@@ -96,6 +103,8 @@ fun HomeScreen() {
 
         acao?.let { ativo ->
 
+            val estaFavoritado = favoritos.contains(ativo.symbol)
+
             StockCard(
                 ticker = ativo.symbol,
                 empresa = ativo.longName ?: "Empresa não informada",
@@ -104,6 +113,31 @@ fun HomeScreen() {
                     ativo.regularMarketChangePercent
                 )
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+                    favoritos = if (estaFavoritado) {
+                        favoritos - ativo.symbol
+                    } else {
+                        favoritos + ativo.symbol
+                    }
+
+                    FavoritesStore.salvar(
+                        context = context,
+                        favoritos = favoritos
+                    )
+                }
+            ) {
+                Text(
+                    text = if (estaFavoritado) {
+                        "★ Remover dos favoritos"
+                    } else {
+                        "☆ Adicionar aos favoritos"
+                    }
+                )
+            }
 
             Spacer(modifier = Modifier.height(18.dp))
 
